@@ -1,7 +1,6 @@
 Cyber Attack Financial Analysis (2015-2024)
-[
-[
-[
+
+
 
 Analysis of 3,001 global cybersecurity incidents from Kaggle data, focusing on financial losses (~50M USD mean/year), attack patterns, and predictive modeling. Created for UMass Dartmouth BADM Final Project.
 
