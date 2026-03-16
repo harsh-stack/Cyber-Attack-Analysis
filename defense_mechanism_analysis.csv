@@ -1,0 +1,31 @@
+"Attack Type","Defense Mechanism Used","Count"
+"Phishing","Encryption",121
+"DDoS","VPN",120
+"DDoS","AI-based Detection",113
+"SQL Injection","Antivirus",113
+"Phishing","VPN",112
+"Malware","Antivirus",111
+"Phishing","Antivirus",111
+"SQL Injection","Encryption",107
+"Man-in-the-Middle","Firewall",106
+"Ransomware","VPN",104
+"DDoS","Antivirus",103
+"DDoS","Firewall",103
+"Ransomware","Antivirus",103
+"SQL Injection","VPN",103
+"Malware","AI-based Detection",102
+"Malware","Firewall",99
+"Ransomware","Firewall",98
+"Ransomware","AI-based Detection",97
+"Man-in-the-Middle","Encryption",95
+"SQL Injection","AI-based Detection",94
+"Phishing","Firewall",93
+"DDoS","Encryption",92
+"Phishing","AI-based Detection",92
+"Ransomware","Encryption",91
+"Malware","VPN",87
+"Man-in-the-Middle","Antivirus",87
+"Malware","Encryption",86
+"Man-in-the-Middle","VPN",86
+"SQL Injection","Firewall",86
+"Man-in-the-Middle","AI-based Detection",85

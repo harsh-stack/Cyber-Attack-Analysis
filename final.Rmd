@@ -1,0 +1,251 @@
+---
+title: "BADM_Final_Project"
+output:
+  html_document:
+    df_print: paged
+date: "2025-04-27"
+---
+
+```{r setup, include=FALSE}
+# Load Required Libraries
+library(dplyr)
+library(ggplot2)
+library(corrplot)
+library(xgboost)
+library(readr)
+library(tidyr)
+
+data <- read_csv("D:/BI@DM/Final/Global_Cybersecurity_Threats_2015-2024.csv")
+
+data_clean <- data %>%
+  select(Year, `Financial Loss (in Million $)`, `Number of Affected Users`, 
+         `Incident Resolution Time (in Hours)`) %>%
+  drop_na() 
+print(paste("Number of columns:", ncol(data)))
+print(paste("Number of rows:", nrow(data)))
+
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r data}
+summary(data_clean$`Financial Loss (in Million $)`)
+
+summary_by_year <- data_clean %>%
+  group_by(Year) %>%
+  summarize(
+    mean_loss = mean(`Financial Loss (in Million $)`, na.rm = TRUE),
+    median_loss = median(`Financial Loss (in Million $)`, na.rm = TRUE),
+    max_loss = max(`Financial Loss (in Million $)`, na.rm = TRUE),
+    min_loss = min(`Financial Loss (in Million $)`, na.rm = TRUE)
+  )
+print(summary_by_year)
+```
+```{r}
+colnames(data)
+```
+```{r}
+ggplot(summary_by_year, aes(x = Year, y = mean_loss)) +
+  geom_line(color = "blue", linewidth = 1) +
+  geom_point(color = "red", size = 2) +
+  labs(
+    title = "Trends in Financial Losses from Cyberattacks (2015-2024)",
+    x = "Year",
+    y = "Mean Financial Loss (in Million $)"
+  ) +
+  theme_minimal()
+
+ggplot(data_clean, aes(x = factor(Year), y = `Financial Loss (in Million $)`)) +
+  geom_boxplot(fill = "orange", color = "black") +
+  labs(
+    title = "Yearly Distribution of Financial Losses",
+    x = "Year",
+    y = "Financial Loss (in Million $)"
+  ) +
+  theme_minimal()
+```
+```{r}
+numeric_data <- data_clean %>% select_if(is.numeric)
+corr_matrix <- cor(numeric_data, use = "complete.obs")
+corrplot(corr_matrix, method = "circle", type = "upper", tl.cex = 0.8)
+```
+```{r}
+features <- as.matrix(data_clean[, -c(2)]) # Exclude Financial Loss as it's the target
+labels <- data_clean$`Financial Loss (in Million $)`
+train_matrix <- xgb.DMatrix(data = features, label = labels)
+xgb_model <- xgboost(
+  data = train_matrix,
+  max_depth = 6,
+  eta = 0.3,
+  nrounds = 100,
+  objective = "reg:squarederror"
+)
+importance <- xgb.importance(feature_names = colnames(features), model = xgb_model)
+xgb.plot.importance(importance_matrix = importance, top_n = 5, measure = "Gain")
+```
+```{r}
+ggsave("trends_financial_losses.png")    # Line plot of trends
+ggsave("yearly_distribution_boxplot.png") # Boxplot of yearly distributions
+ggsave("feature_importance_plot.png")   # XGBoost feature importance plot
+
+write.csv(summary_by_year, "summary_by_year.csv", row.names = FALSE)
+```
+```{r}
+ggplot(data_clean, aes(x = Year, y = `Financial Loss (in Million $)`)) +
+  geom_line(stat = "summary", fun = "mean", color = "blue", size = 1) +
+  geom_point(stat = "summary", fun = "mean", color = "red", size = 2) +
+  labs(
+    title = "Trends in Financial Losses from Cyberattacks (2015-2024)",
+    x = "Year",
+    y = "Mean Financial Loss (in Million $)"
+  ) +
+  theme_minimal()
+```
+
+```{r}
+attack_percentage <- data %>%
+  count(`Attack Type`) %>%
+  mutate(Percentage = n / sum(n) * 100)
+
+print(attack_percentage)
+```
+```{r}
+ggplot(attack_percentage, aes(x = "", y = Percentage, fill = `Attack Type`)) +
+  geom_bar(stat = "identity", width = 1) +
+  coord_polar("y", start = 0) +
+  labs(
+    title = "Percentage of Attack Types"
+  ) +
+  theme_void()
+```
+```{r}
+affected_users_analysis <- data %>%
+  group_by(`Attack Type`) %>%
+  summarize(
+    Total_Affected_Users = sum(`Number of Affected Users`, na.rm = TRUE),
+    Percentage = (Total_Affected_Users / sum(data_clean$`Number of Affected Users`, na.rm = TRUE)) * 100
+  ) %>%
+  arrange(desc(Percentage)) 
+print(affected_users_analysis)
+```
+```{r}
+ggplot(affected_users_analysis, aes(x = "", y = Percentage, fill = `Attack Type`)) +
+  geom_bar(stat = "identity", width = 1) +
+  coord_polar("y", start = 0) +
+  geom_text(
+    aes(label = paste0(round(Percentage, 1), "%")),
+    position = position_stack(vjust = 0.5),
+    color = "white",
+    size = 4
+  ) +
+  labs(
+    title = "Percentage of Affected Users by Attack Type"
+  ) +
+  theme_void()
+```
+```{r}
+defense_analysis <- data %>%
+  group_by(`Attack Type`, `Defense Mechanism Used`) %>%
+  summarize(Count = n()) %>%
+  arrange(desc(Count))
+
+print(defense_analysis)
+```
+```{r}
+ggplot(defense_analysis, aes(x = `Attack Type`, y = `Defense Mechanism Used`, fill = Count)) +
+  geom_tile() +
+  scale_fill_gradient(low = "lightblue", high = "darkblue") +
+  labs(
+    title = "Comparison of Attack Types and Defense Mechanisms",
+    x = "Attack Type",
+    y = "Defense Mechanism",
+    fill = "Frequency"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+```{r}
+ggplot(defense_analysis, aes(x = `Attack Type`, y = Count, fill = `Defense Mechanism Used`)) +
+  geom_bar(stat = "identity", position = "stack") +
+  labs(
+    title = "Defense Mechanisms Used Against Attack Types",
+    x = "Attack Type",
+    y = "Count"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+```{r}
+write.csv(defense_analysis, "defense_mechanism_analysis.csv", row.names = FALSE)
+```
+```{r}
+source_analysis <- data %>%
+  group_by(`Attack Source`) %>%
+  summarize(
+    Total_Loss = sum(`Financial Loss (in Million $)`, na.rm = TRUE),
+    Average_Loss = mean(`Financial Loss (in Million $)`, na.rm = TRUE)
+  ) %>%
+  arrange(desc(Total_Loss))
+print(source_analysis)
+```
+```{r}
+attack_loss_analysis <- data %>%
+  group_by(`Attack Type`) %>%
+  summarize(
+    Average_Loss = mean(`Financial Loss (in Million $)`, na.rm = TRUE),
+    Total_Loss = sum(`Financial Loss (in Million $)`, na.rm = TRUE)
+  ) %>%
+  arrange(desc(Total_Loss))
+print(attack_loss_analysis)
+```
+```{r}
+geographic_analysis <- data %>%
+  group_by(Country) %>%
+  summarize(
+    Total_Loss = sum(`Financial Loss (in Million $)`, na.rm = TRUE),
+    Number_Attacks = n()
+  ) %>%
+  arrange(desc(Total_Loss))
+print(geographic_analysis)
+```
+```{r}
+ggplot(data, aes(x = `Incident Resolution Time (in Hours)`, y = `Financial Loss (in Million $)`)) +
+  geom_point(color = "blue") +
+  geom_smooth(method = "lm", color = "red", se = FALSE) +
+  labs(title = "Resolution Time vs. Financial Loss", x = "Resolution Time (in Hours)", y = "Financial Loss (in Million $)") +
+  theme_minimal()
+
+```
+```{r}
+
+industry_analysis <- data %>%
+  group_by(`Target Industry`) %>%
+  summarize(
+    Average_Loss = mean(`Financial Loss (in Million $)`, na.rm = TRUE),
+    Max_Loss = max(`Financial Loss (in Million $)`, na.rm = TRUE),
+    Min_Loss = min(`Financial Loss (in Million $)`, na.rm = TRUE)
+  ) %>%
+  arrange(desc(Average_Loss))
+print(industry_analysis)
+```
+
+```{r}
+
+
+```
+```{r}
+
+
+```
+```{r}
+
+
+```
+```{r}
+
+
+```
